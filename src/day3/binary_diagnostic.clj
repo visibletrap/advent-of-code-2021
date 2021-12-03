@@ -6,20 +6,21 @@
   (with-open [r (jio/reader "src/day3/input")]
     (into [] (map (comp #(mapv parse-long %) #(str/split % #""))) (line-seq r))))
 
-(defn gamma-rate
-  [d]
-  (let [half (/ (count d) 2)]
-    (->> (apply map
-                (comp #(if (>= % half) 1 0)
-                      #(apply + %&))
-                d)
-         (into []))))
+(defn transpose
+  [lines]
+  (apply mapv vector lines))
 
-(def flip {1 0 0 1})
+(defn take-key-from-compare-vals-by
+  [f m]
+  (first (apply f second m)))
 
-(defn epsilon-rate
-  [d]
-  (mapv flip (gamma-rate d)))
+(def take-higher-or-1
+  (some-fn #(when (apply = (vals %)) 1)
+           (partial take-key-from-compare-vals-by max-key)))
+
+(def take-lower-or-0
+  (some-fn #(when (apply = (vals %)) 0)
+           (partial take-key-from-compare-vals-by min-key)))
 
 (defn bin-vec->decimal
   [v]
@@ -27,43 +28,32 @@
 
 (defn part1
   [lines]
-  (* (-> lines gamma-rate bin-vec->decimal)
-     (-> lines epsilon-rate bin-vec->decimal)))
+  (let [bin->freq (->> lines transpose (map frequencies))]
+    (->> [take-higher-or-1 take-lower-or-0]
+         (map (comp bin-vec->decimal #(mapv % bin->freq)))
+         (apply *))))
 
 (part1 data)
 
 
-(defn find-major
-  [d]
-  (let [half (/ (count d) 2)]
-    (->> (apply map
-                (comp #(if (>= % half) 1 0)
-                      #(apply + %&))
-                d)
-         (into []))))
-
-(defn find-minor
-  [d]
-  (let [half (/ (count d) 2)]
-    (->> (apply map
-                (comp #(if (>= % half) 0 1)
-                      #(apply + %&))
-                d)
-         (into []))))
-
-(defn part2-decoder
-  [f lines]
-  (-> (reduce (fn [d i]
-                (if (seq (rest d))
-                  (filterv (comp #{(-> d f (get i))} #(get % i)) d)
-                  (reduced d)))
-              lines
-              (range))
+(defn extract-line
+  [select-fn lines]
+  (-> (reduce
+        (fn [lines- i]
+          (let [bin->freq (->> lines- transpose (mapv frequencies))
+                selected-bin (select-fn (get bin->freq i))
+                [_ & others :as lines--] (filterv (comp #{selected-bin} #(get % i)) lines-)]
+            (if (seq others)
+              lines--
+              (reduced lines--))))
+        lines
+        (range))
       first))
 
 (defn part2
   [lines]
-  (* (->> lines (part2-decoder find-major) bin-vec->decimal)
-     (->> lines (part2-decoder find-minor) bin-vec->decimal)))
+  (->> [#(extract-line take-higher-or-1 %) #(extract-line take-lower-or-0 %)]
+       (map (comp bin-vec->decimal #(% lines)))
+       (apply *)))
 
 (part2 data)
