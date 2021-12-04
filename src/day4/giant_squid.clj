@@ -47,34 +47,61 @@
 
 (defn apply-drawn-number
   [state dn]
-  (let [new-state
-        (-> state
-            (update :boards (fn [bs] (mapv #(apply-drawn-number-to-board % dn) bs)))
-            (update :drawn-numbers conj dn))]
-    (if (seq (find-win-boards (:boards new-state)))
-      (reduced new-state)
-      new-state)))
+  (-> state
+      (update :boards (fn [bs] (mapv #(apply-drawn-number-to-board % dn) bs)))
+      (update :drawn-numbers conj dn)))
 
-(defn play-until-win
+(defn play-until-first-win
   [{state :state all-drawn-numbers :drawn-numbers}]
-  (reduce apply-drawn-number state all-drawn-numbers))
+  (reduce (fn [state dn]
+            (let [new-state (apply-drawn-number state dn)]
+              (if (seq (find-win-boards (:boards new-state)))
+                (reduced new-state)
+                new-state)))
+          state
+          all-drawn-numbers))
 
 (defn init-state
   [raw-boards]
   {:drawn-numbers []
    :boards (mapv index-board raw-boards)})
 
+(defn cal-output
+  [state]
+  (let [b (first (find-win-boards (:boards state)))
+        {:keys [unmarked-numbers marked-numbers]} b]
+    (* (apply + unmarked-numbers) (peek marked-numbers))))
+
 (defn part1
-  [data]
-  (let [state (play-until-win (assoc data :state (init-state (:raw-boards data))))
-        {:keys [boards drawn-numbers]} state]
-    (* (->> boards
-            (find-win-boards)
-            first
-            :unmarked-numbers
-            (apply +))
-       (peek drawn-numbers))))
+  [{:keys [raw-boards drawn-numbers]}]
+  (-> {:state (init-state raw-boards) :drawn-numbers drawn-numbers}
+      play-until-first-win
+      cal-output))
 
 (comment
   (part1 input-data)
+  )
+
+(defn remove-win-boards
+  [boards]
+  (into [] (remove win? boards)))
+
+(defn play-until-last-win
+  [{state :state all-drawn-numbers :drawn-numbers}]
+  (reduce (fn [state dn]
+            (let [{:keys [boards] :as new-state} (apply-drawn-number state dn)]
+              (if (and (= (count boards) 1) (win? (first boards)))
+                (reduced new-state)
+                (update new-state :boards remove-win-boards))))
+          state
+          all-drawn-numbers))
+
+(defn part2
+  [{:keys [raw-boards drawn-numbers]}]
+  (-> {:state (init-state raw-boards) :drawn-numbers drawn-numbers}
+      play-until-last-win
+      cal-output))
+
+(comment
+  (part2 input-data)
   )
