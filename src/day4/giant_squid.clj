@@ -14,15 +14,13 @@
 
 (defn index-board
   [raw-board]
-  (let [all-numbers (into #{} (apply concat raw-board))]
-    {:win-groups (into raw-board (apply map vector raw-board))
-     :all-numbers all-numbers
-     :marked-numbers []
-     :unmarked-numbers all-numbers}))
+  {:win-groups (into raw-board (apply map vector raw-board))
+   :marked-numbers []
+   :unmarked-numbers (into #{} (apply concat raw-board))})
 
 (defn contains-number?
   [board n]
-  (contains? (:all-numbers board) n))
+  (contains? (:unmarked-numbers board) n))
 
 (defn apply-drawn-number-to-board
   [board n]
