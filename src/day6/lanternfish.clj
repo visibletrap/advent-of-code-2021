@@ -53,12 +53,32 @@
   (let [lfs- (decrease-days lfs)]
     (merge (reset-negative-days lfs-) (new-gens-from-neg-lfs lfs-))))
 
+(defn next-days
+  [lfs n]
+  (reduce (fn [lfs _] (next-day lfs)) lfs (range n)))
+
+(defn count-lfs
+  [lfs]
+  (->> lfs (map second) (apply +)))
+
+(defn solve
+  [lf-days n]
+  (-> (days->lfs lf-days)
+      (next-days n)
+      (count-lfs)))
+
 (defn part1
   [lf-days]
-  (->> (reduce (fn [lfs _] (next-day lfs)) (days->lfs lf-days) (range 80))
-       (map second)
-       (apply +)))
+  (solve lf-days 80))
 
 (comment
   (part1 input-data)
+  )
+
+(defn part2
+  [lf-days]
+  (solve lf-days 256))
+
+(comment
+  (part2 input-data)
   )
