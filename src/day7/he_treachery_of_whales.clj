@@ -20,3 +20,23 @@
 (comment
   (part1 input-data)
   )
+
+(defn cal-part2-fuel*
+  [pos-diff]
+  (apply + (range (inc pos-diff))))
+
+(def cal-part2-fuel (memoize cal-part2-fuel*))
+
+(defn cal-move-to2
+  [current-positions target-position]
+  (apply + (map (comp cal-part2-fuel math/abs #(- % target-position)) current-positions)))
+
+(defn part2
+  [current-positions]
+  (->> (range (apply min current-positions) (apply max current-positions))
+       (map #(cal-move-to2 current-positions %))
+       (apply min)))
+
+(comment
+  (part2 input-data)
+  )
