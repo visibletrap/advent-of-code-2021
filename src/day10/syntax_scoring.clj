@@ -8,8 +8,19 @@
          (map (comp #(str/split % #"")))
          (into []))))
 
-(def match?
-  #{["[" "]"] ["(" ")"] ["{" "}"] ["<" ">"]})
+(def match-char
+  {"[" "]"
+   "<" ">"
+   "{" "}"
+   "(" ")"})
+
+(def match? (set match-char))
+
+(defn autocomplete
+  [chars]
+  (->> chars
+       reverse
+       (mapv match-char)))
 
 (defn interpret
   [line]
@@ -29,10 +40,11 @@
       (if (empty? out)
         {:success true}
         {:success false
-         :cause :incomplete})
+         :cause :incomplete
+         :fix (autocomplete out)})
       out)))
 
-(def score
+(def char->score1
   {")" 3
    "]" 57
    "}" 1197
@@ -43,9 +55,36 @@
   (->> lines
        (map (juxt identity interpret))
        (filter (comp #{:corrupted} :cause second))
-       (map (comp score :found second))
+       (map (comp char->score1 :found second))
        (apply +)))
 
 (comment
   (part1 input-data)
+  )
+
+(def char->score2
+  {")" 1
+   "]" 2
+   "}" 3
+   ">" 4})
+
+(defn cal-part2-score
+  [chars]
+  (->> chars
+       (map char->score2)
+       (reduce (fn [t s] (+ (* t 5) s)) 0)))
+
+(defn part2
+  [lines]
+  (let [scores (->> lines
+                    (map (juxt identity interpret))
+                    (filter (comp #{:incomplete} :cause second))
+                    (map (comp cal-part2-score :fix second))
+                    (sort)
+                    (into []))
+        median-pos (/ (dec (count scores)) 2)]
+    (get scores median-pos)))
+
+(comment
+  (part2 input-data)
   )
