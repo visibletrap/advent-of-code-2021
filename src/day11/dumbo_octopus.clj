@@ -95,3 +95,21 @@
 
 (comment
   (part1 input-data))
+
+(defn all-zero?
+  [grid]
+  (every? #(every? zero? %) grid))
+
+(defn part2
+  [grid]
+  (reduce (fn [grid i]
+            (let [g+ (step grid)]
+              (if (all-zero? g+)
+                (reduced (inc i))
+                g+)))
+          grid
+          (range)))
+
+(comment
+  (part2 input-data)
+  )
